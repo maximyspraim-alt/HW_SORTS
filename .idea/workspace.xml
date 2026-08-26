@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ProjectId" id="3IRkMJX3E8hANvBXmAjBcAfJvoQ" />
+  <component name="PropertiesComponent">{}</component>
+  <component name="RunManager">
+    <configuration name="All in HW_SORTS" type="JUnit" factoryName="JUnit" temporary="true" nameIsGenerated="true">
+      <module name="HW_SORTS" />
+      <option name="PACKAGE_NAME" value="" />
+      <option name="TEST_OBJECT" value="package" />
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
+    <recent_temporary>
+      <list>
+        <item itemvalue="JUnit.All in HW_SORTS" />
+      </list>
+    </recent_temporary>
+  </component>
+</project>
