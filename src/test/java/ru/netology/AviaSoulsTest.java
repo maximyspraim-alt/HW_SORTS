@@ -91,21 +91,6 @@ public class AviaSoulsTest {
         Assertions.assertArrayEquals(expected, actual);
     }
 
-    @Test
-    public void shouldSortTicketsByTimeWithDifferentTimes() {
-        TicketTimeComparator comparator = new TicketTimeComparator();
-
-        Ticket ticket7 = new Ticket("Москва", "Сочи", 25000, 800, 1030); // 230 мин
-        manager.add(ticket7);
-
-        Ticket[] result = manager.searchAndSortBy("Москва", "Сочи", comparator);
-
-        // Проверяем только время полета (порядок между одинаковым временем не важен)
-        int[] flightTimes = Arrays.stream(result).mapToInt(Ticket::getFlightTime).toArray();
-        int[] expectedTimes = {230, 230, 300, 300, 400};
-        Assertions.assertArrayEquals(expectedTimes, flightTimes);
-    }
-
     // ===== ТЕСТЫ ДЛЯ ПОИСКА =====
 
     @Test
@@ -130,21 +115,56 @@ public class AviaSoulsTest {
         Assertions.assertArrayEquals(expected, actual);
     }
 
+    // ===== ИСПРАВЛЕННЫЙ ТЕСТ (СТРОКА 219) =====
     @Test
-    public void shouldSearchAndSortByTimeWithDifferentRoute() {
-        TicketTimeComparator comparator = new TicketTimeComparator();
-
-        // В setUp() уже есть ticket5 для маршрута "Москва" -> "СПб"
-        // Добавляем еще 2 билета для этого маршрута
-        Ticket ticket7 = new Ticket("Москва", "СПб", 10000, 900, 1100); // 200 мин
-        Ticket ticket8 = new Ticket("Москва", "СПб", 11000, 700, 1000); // 300 мин
+    public void shouldSortByPriceWithSamePrices() {
+        // Создаём билеты с одинаковой ценой (15000)
+        Ticket ticket7 = new Ticket("Москва", "Сочи", 15000, 600, 900);
+        Ticket ticket8 = new Ticket("Москва", "Сочи", 15000, 700, 1000);
         manager.add(ticket7);
         manager.add(ticket8);
 
-        // Все билеты для "Москва" -> "СПб":
-        // ticket5: 200 мин, ticket7: 200 мин, ticket8: 300 мин
-        Ticket[] expected = {ticket5, ticket7, ticket8};
-        Ticket[] actual = manager.searchAndSortBy("Москва", "СПб", comparator);
+        // Ожидаемый порядок: по возрастанию цены
+        // 10000 (ticket4), 12000 (ticket2), 15000 (ticket1, ticket7, ticket8), 18000 (ticket3)
+        // ticket1, ticket7, ticket8 - все с ценой 15000, порядок соответствует добавлению
+        Ticket[] expected = {ticket4, ticket2, ticket1, ticket7, ticket8, ticket3};
+        Ticket[] actual = manager.search("Москва", "Сочи");
+
+        Assertions.assertArrayEquals(expected, actual);
+    }
+
+    // ===== ИСПРАВЛЕННЫЙ ТЕСТ =====
+    @Test
+    public void shouldSortByFlightTimeWithSameTimeDifferentPrices() {
+        TicketTimeComparator comparator = new TicketTimeComparator();
+
+        Ticket ticket7 = new Ticket("Москва", "Сочи", 20000, 800, 1100); // 300 мин
+        Ticket ticket8 = new Ticket("Москва", "Сочи", 5000, 800, 1100);  // 300 мин
+        manager.add(ticket7);
+        manager.add(ticket8);
+
+        // 230 мин (ticket3), 300 мин (ticket1, ticket2, ticket7, ticket8), 400 мин (ticket4)
+        Ticket[] expected = {ticket3, ticket1, ticket2, ticket7, ticket8, ticket4};
+        Ticket[] actual = manager.searchAndSortBy("Москва", "Сочи", comparator);
+
+        Assertions.assertArrayEquals(expected, actual);
+    }
+
+    // ===== ИСПРАВЛЕННЫЙ ТЕСТ =====
+    @Test
+    public void shouldSortTicketsByTimeWithDifferentTimes() {
+        TicketTimeComparator comparator = new TicketTimeComparator();
+
+        // ticket7: 230 мин (такое же как у ticket3)
+        Ticket ticket7 = new Ticket("Москва", "Сочи", 25000, 800, 1030); // 230 мин
+        manager.add(ticket7);
+
+        // Ожидаемый порядок по времени:
+        // 230 мин (ticket3, ticket7), 300 мин (ticket1, ticket2), 400 мин (ticket4)
+        // ticket3 и ticket7 - оба 230 мин, порядок соответствует добавлению
+        Ticket[] expected = {ticket3, ticket7, ticket1, ticket2, ticket4};
+        Ticket[] actual = manager.searchAndSortBy("Москва", "Сочи", comparator);
+
         Assertions.assertArrayEquals(expected, actual);
     }
 
@@ -177,20 +197,6 @@ public class AviaSoulsTest {
     }
 
     @Test
-    public void shouldSortByPriceWithSamePrices() {
-        Ticket ticket7 = new Ticket("Москва", "Сочи", 15000, 600, 900);
-        Ticket ticket8 = new Ticket("Москва", "Сочи", 15000, 700, 1000);
-        manager.add(ticket7);
-        manager.add(ticket8);
-
-        Ticket[] result = manager.search("Москва", "Сочи");
-
-        int[] prices = Arrays.stream(result).mapToInt(Ticket::getPrice).toArray();
-        int[] expectedPrices = {10000, 12000, 15000, 15000, 15000, 18000};
-        Assertions.assertArrayEquals(expectedPrices, prices);
-    }
-
-    @Test
     public void shouldCompareByPriceAndTimeWorkTogether() {
         TicketTimeComparator timeComparator = new TicketTimeComparator();
 
@@ -199,24 +205,29 @@ public class AviaSoulsTest {
         manager.add(ticket7);
         manager.add(ticket8);
 
+        // Ожидаемый порядок по времени:
+        // 100 мин (ticket8), 200 мин (ticket7), 230 мин (ticket3), 300 мин (ticket1, ticket2), 400 мин (ticket4)
         Ticket[] expected = {ticket8, ticket7, ticket3, ticket1, ticket2, ticket4};
         Ticket[] actual = manager.searchAndSortBy("Москва", "Сочи", timeComparator);
         Assertions.assertArrayEquals(expected, actual);
     }
 
+    // ===== ДОПОЛНИТЕЛЬНЫЙ ТЕСТ ДЛЯ РАЗНЫХ МАРШРУТОВ =====
     @Test
-    public void shouldSortByFlightTimeWithSameTimeDifferentPrices() {
+    public void shouldSearchAndSortByTimeWithDifferentRoute() {
         TicketTimeComparator comparator = new TicketTimeComparator();
 
-        Ticket ticket7 = new Ticket("Москва", "Сочи", 20000, 800, 1100); // 300 мин
-        Ticket ticket8 = new Ticket("Москва", "Сочи", 5000, 800, 1100);  // 300 мин
+        // В setUp() уже есть ticket5 для маршрута "Москва" -> "СПб"
+        // Добавляем еще 2 билета для этого маршрута
+        Ticket ticket7 = new Ticket("Москва", "СПб", 10000, 900, 1100); // 200 мин
+        Ticket ticket8 = new Ticket("Москва", "СПб", 11000, 700, 1000); // 300 мин
         manager.add(ticket7);
         manager.add(ticket8);
 
-        Ticket[] result = manager.searchAndSortBy("Москва", "Сочи", comparator);
-
-        int[] flightTimes = Arrays.stream(result).mapToInt(Ticket::getFlightTime).toArray();
-        int[] expectedTimes = {230, 300, 300, 300, 300, 400};
-        Assertions.assertArrayEquals(expectedTimes, flightTimes);
+        // Все билеты для "Москва" -> "СПб":
+        // ticket5: 200 мин, ticket7: 200 мин, ticket8: 300 мин
+        Ticket[] expected = {ticket5, ticket7, ticket8};
+        Ticket[] actual = manager.searchAndSortBy("Москва", "СПб", comparator);
+        Assertions.assertArrayEquals(expected, actual);
     }
 }
